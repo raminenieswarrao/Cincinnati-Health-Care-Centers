@@ -1,0 +1,185 @@
+#Installation of tidyverse package
+install.packages("tidyverse")
+#loaded the ggplot2 into memory
+library(ggplot2)
+
+#Load the CincyHealthCenters file into Hospitals object
+Hospitals <- read.csv("C:/Users/ramin/OneDrive/Desktop/Assignments/R and Tableau/Final Project/CincyHealthCenters.csv")
+
+#Visualization 1
+# Created a bar chart using ggplot2 with CARE_TYPE on the x-axis, and fill by CARE_TYPE
+# I have rotated the x-axis labels for better readability
+ggplot(data = Hospitals, aes(x = CARE_TYPE, fill = CARE_TYPE)) +
+  geom_bar() +
+  labs(title = "Cincinnati Hospitals Distribution by Care Type",
+       x = "Care Type",
+       y = "Count") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  
+  
+  
+
+#Visualization 2
+# Line graph to show frequency of nursing services available in corresponding neighborhoods
+# Applied Color code for Nursing services
+# I have rotated the x-axis labels for better readability
+ggplot(Hospitals, aes(x = NEIGHBORHOOD, group = NURSING_SERVICES)) +
+  geom_line(stat = "count", aes(color = NURSING_SERVICES), size = 1) +
+  labs(title = "Frequency of Nursing Services by Neighborhood",
+       x = "Neighborhood",
+       y = "Frequency",
+       color = "Nursing Services") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+#Visualization 3
+# Create the scatter plot with trend line
+# Scatter plot with lab fee as size indicator
+# Add a linear trend line
+#I have added color code scatter line for good looking visualization.
+ggplot(data = Hospitals, aes(x = LONGITUDE, y = LATITUDE, color = factor(AVERAGE_LAB_FEE))) +
+  geom_point(size = 4, alpha = 0.9) +  
+  geom_smooth(method = "lm", se = FALSE, color = "black") + 
+  labs(title = "Visualization for Geographic Location vs. Average Lab Fee",
+       x = "Longitude",
+       y = "Latitude",
+       color = "Average Lab Fee") +
+  scale_color_discrete(name = "Average Lab Fee of Health Care") +
+  theme_minimal()
+
+# Finding the linear regression statistics for Health Care accross different locations.
+linear_model <- lm(LATITUDE ~ LONGITUDE, data = Hospitals)
+summary(linear_model)
+
+
+#Visualization 4
+#Installing the leaflet package which contains maps in R 
+install.packages("leaflet")
+#Loading the package into memory.
+library(leaflet)
+
+
+
+# Loading Hospitals data into data frame 
+data <- data.frame(Hospitals)
+data
+
+# Create a leaflet map with circle markers for geographic locations
+map <- leaflet() %>%
+  addTiles() %>%
+  addCircleMarkers(
+    data = data,
+    label = paste("TYPE =", data$CARE_TYPE, ", Admission Fee =", data$ADMISSION_FEE, ", Average Medical Cost =", data$AVERAGE_MEDICAL_COST),
+    color = "black",  # Change marker border color to black
+    fillColor = "yellow",  # Change marker fill color to yellow
+    fillOpacity = 1  # Set fill opacity to 1
+  ) %>%
+  # Create a custom title using addControl
+  addControl(
+# HTML for the title
+    html = "<h3 style='text-align: center;color: blue;'>Visualization for HealthCare Data on Maps</h3>",
+# Position of the title on the map
+    position = "topright"  
+  )
+  
+#Display map
+map
+
+
+
+#Visualization 5 (Unstructured Data with Text Mining Concepts)
+
+#Installing packages that we can explore mining concepts.
+install.packages(c("tm","ggplot2","e1071","caret","quanteda","irlba","randomForest"))
+#Loading data from system to object data
+# Now reading my CincyHealthCenters.csv file from system.
+data <- read.csv("C:/Users/ramin/OneDrive/Desktop/Assignments/R and Tableau/Final Project/CincyHealthCenters.csv", stringsAsFactors=FALSE)
+
+
+
+#Let's check the structure of CincyHealthCenters data
+str(data)
+
+#loading textmining package into memory, here I'm using tm
+library(tm)
+
+# By using tm package (text mining). Data is copied from data to test_data into single string
+test_data <- paste(data$SERVICES_PROVIDED, collapse= " ")
+
+test_data
+
+
+# I'm using VectorSource function to create source data from test_data and storing into object data_source.
+data_source <- VectorSource(test_data)
+
+#Now I'm using Corpus function to store data into one document to compare for futhuer analysis.
+data_corpus <- Corpus(data_source)
+data_corpus
+
+#Applying Pre-processing techniques.
+
+#removing stopwords 
+data_corpus<-tm_map(data_corpus, removeWords, stopwords("english"))
+
+
+#compare new data
+inspect(data_corpus)
+
+#remove punctuations.
+data_corpus <- tm_map(data_corpus, removePunctuation)
+inspect(data_corpus)
+
+
+#third remove wide spaces
+data_corpus <- tm_map(data_corpus, stripWhitespace)
+inspect(data_corpus)
+
+
+#Change into lowercase
+data_corpus <-tm_map(data_corpus, content_transformer(tolower))
+inspect(data_corpus)
+
+
+# Remove specific words from the data_corpus.
+data_corpus <- tm_map(data_corpus, removeWords, c("services", "title", "outreach", "enrollment"))
+
+#Creation of frequency matrix for repeated words (dtm - document term matrix)
+data_dtm<-DocumentTermMatrix(data_corpus)
+
+#converting document into matrix
+data_dtm1 <-as.matrix(data_dtm)
+#display data_dtm1
+data_dtm1
+
+#Now we are finding most frequently used words in data.
+data_frequency <- colSums(data_dtm1)
+
+#sorting data according to data_frequency
+data_frequency <- sort(data_frequency, decreasing= TRUE)
+
+#Display structure of data_frequency
+str(data_frequency)
+
+#Display data
+data_frequency
+
+#loading data_frequency into data frame data_dtm_d
+data_dtm_d <- data.frame(word = names(data_frequency), freq=data_frequency)
+#display data frame
+data_dtm_d
+
+#install word cloud package
+install.packages("wordcloud")
+#loading package into memory
+library(wordcloud)
+
+
+# Combine the color vectors
+colors <- rainbow(length(data_frequency))  
+
+#Loading data names into words object.
+words<-names(data_frequency)
+
+#using word cloud function to create a visualization for data_frequency.
+wordcloud(words,data_frequency, colors = colors)
+
